@@ -21,12 +21,30 @@ public class NettyServerHandler extends ChannelInboundHandlerAdapter {
      */
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        System.out.println("server ctx" + ctx);
-        //讲 msg 转成一个 ByteBuf
-        //ByteBuf 是 Netty 提供的，不是 NIO 的 ByteBuffer
-        ByteBuf buf = (ByteBuf) msg;
-        System.out.println("客户端发送的消息是：" + buf.toString(CharsetUtil.UTF_8));
-        System.out.println("客户端的地址是：" + ctx.channel().remoteAddress());
+
+        //比如我们这里有一个非常耗时长的业务 -> 异步执行 -> 提交该 channel 对应的
+        //NIOEventLoop 的 taskQueue 中
+
+        //解决方案1： 用户程序自定义的普通任务
+        ctx.channel().eventLoop().execute(new Runnable() {
+            @Override
+            public void run() {
+                try {
+                    Thread.sleep(10 * 1000);
+                    ctx.writeAndFlush(Unpooled.copiedBuffer("Hello 客户端 喵2", CharsetUtil.UTF_8));
+                } catch (Exception e) {
+                    System.out.println("发生异常" + e.getMessage());
+                }
+            }
+        });
+
+
+//        System.out.println("server ctx" + ctx);
+//        //讲 msg 转成一个 ByteBuf
+//        //ByteBuf 是 Netty 提供的，不是 NIO 的 ByteBuffer
+//        ByteBuf buf = (ByteBuf) msg;
+//        System.out.println("客户端发送的消息是：" + buf.toString(CharsetUtil.UTF_8));
+//        System.out.println("客户端的地址是：" + ctx.channel().remoteAddress());
     }
 
 
